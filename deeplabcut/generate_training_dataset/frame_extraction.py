@@ -37,8 +37,7 @@ def select_cropping_area(config, videos=None):
         videos = list(cfg.get("video_sets_original") or cfg["video_sets"])
 
     for video in videos:
-        coords = auxfun_videos.draw_bbox(video)
-        if coords:
+        if coords := auxfun_videos.draw_bbox(video):
             temp = {
                 "crop": ", ".join(
                     map(
@@ -225,14 +224,7 @@ def extract_frames(
             else:
                 askuser = "yes"
 
-            if (
-                askuser == "y"
-                or askuser == "yes"
-                or askuser == "Ja"
-                or askuser == "ha"
-                or askuser == "oui"
-                or askuser == "ouais"
-            ):  # multilanguage support :)
+            if askuser in ["y", "yes", "Ja", "ha", "oui", "ouais"]:  # multilanguage support :)
 
                 if opencv:
                     cap = VideoReader(video)
@@ -251,19 +243,13 @@ def extract_frames(
                 fname = Path(video)
                 output_path = Path(config).parents[0] / "labeled-data" / fname.stem
 
-                if output_path.exists():
-                    if len(os.listdir(output_path)):
-                        if userfeedback:
-                            askuser = input(
-                                "The directory already contains some frames. Do you want to add to it?(yes/no): "
-                            )
-                        if not (
-                            askuser == "y"
-                            or askuser == "yes"
-                            or askuser == "Y"
-                            or askuser == "Yes"
-                        ):
-                            sys.exit("Delete the frames and try again later!")
+                if output_path.exists() and len(os.listdir(output_path)):
+                    if userfeedback:
+                        askuser = input(
+                            "The directory already contains some frames. Do you want to add to it?(yes/no): "
+                        )
+                    if not askuser in ["y", "yes", "Y", "Yes"]:
+                        sys.exit("Delete the frames and try again later!")
 
                 if crop == "GUI":
                     cfg = select_cropping_area(config, [video])

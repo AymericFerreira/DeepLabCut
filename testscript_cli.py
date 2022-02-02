@@ -9,6 +9,7 @@ This script tests various functionalities in an automatic way.
 It produces nothing of interest scientifically.
 """
 
+
 task = "Testcore"  # Enter the name of your experiment Task
 scorer = "Mackenzie"  # Enter the name of the experimenter/labeler
 
@@ -51,7 +52,7 @@ net_type = "resnet_50"  #'mobilenet_v2_0.35' #'resnet_50'
 augmenter_type = "default"
 augmenter_type2 = "imgaug"
 
-if platform.system() == "Darwin" or platform.system() == "Windows":
+if platform.system() in ["Darwin", "Windows"]:
     print("On Windows/OSX tensorpack is not tested by default.")
     augmenter_type3 = "imgaug"
 else:
@@ -85,11 +86,7 @@ for index, bodypart in enumerate(cfg["bodyparts"]):
         columns=columnindex,
         index=[os.path.join("labeled-data", videoname, fn) for fn in frames],
     )
-    if index == 0:
-        dataFrame = frame
-    else:
-        dataFrame = pd.concat([dataFrame, frame], axis=1)
-
+    dataFrame = frame if index == 0 else pd.concat([dataFrame, frame], axis=1)
 dataFrame.to_csv(
     os.path.join(
         cfg["project_path"],

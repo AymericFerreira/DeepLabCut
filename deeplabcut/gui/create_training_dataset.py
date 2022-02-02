@@ -264,16 +264,14 @@ class Create_training_dataset(wx.Panel):
     def help_function(self, event):
 
         filepath = "help.txt"
-        f = open(filepath, "w")
-        sys.stdout = f
-        fnc_name = "deeplabcut.create_training_dataset"
-        pydoc.help(fnc_name)
-        f.close()
+        with open(filepath, "w") as f:
+            sys.stdout = f
+            fnc_name = "deeplabcut.create_training_dataset"
+            pydoc.help(fnc_name)
         sys.stdout = sys.__stdout__
-        help_file = open("help.txt", "r+")
-        help_text = help_file.read()
-        wx.MessageBox(help_text, "Help", wx.OK | wx.ICON_INFORMATION)
-        help_file.close()
+        with open("help.txt", "r+") as help_file:
+            help_text = help_file.read()
+            wx.MessageBox(help_text, "Help", wx.OK | wx.ICON_INFORMATION)
         os.remove("help.txt")
 
     def select_config(self, event):
@@ -322,11 +320,7 @@ class Create_training_dataset(wx.Panel):
         config_file = auxiliaryfunctions.read_config(self.config)
         #trainindex = self.trainingindex.GetValue()
 
-        if self.userfeedback.GetStringSelection() == "Yes":
-            userfeedback = True
-        else:
-            userfeedback = False
-
+        userfeedback = self.userfeedback.GetStringSelection() == "Yes"
         if config_file.get("multianimalproject", False):
             deeplabcut.create_multianimaltraining_dataset(
                 self.config,

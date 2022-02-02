@@ -81,9 +81,9 @@ def create_new_project(
     date = dt.today()
     month = months_3letter[date.month]
     day = date.day
-    d = str(month[0:3] + str(day))
+    d = str(month[:3] + str(day))
     date = dt.today().strftime("%Y-%m-%d")
-    if working_directory == None:
+    if working_directory is None:
         working_directory = "."
     wd = Path(working_directory).resolve()
     project_name = "{pn}-{exp}-{date}".format(pn=project, exp=experimenter, date=date)
@@ -109,8 +109,8 @@ def create_new_project(
             vids_in_dir = [
                 os.path.join(i, vp) for vp in os.listdir(i) if videotype in vp
             ]
-            vids = vids + vids_in_dir
-            if len(vids_in_dir) == 0:
+            vids += vids_in_dir
+            if not vids_in_dir:
                 print("No videos found in", i)
                 print(
                     "Perhaps change the videotype, which is currently set to:",
@@ -126,7 +126,7 @@ def create_new_project(
                 )
         else:
             if os.path.isfile(i):
-                vids = vids + [i]
+                vids += [i]
             videos = vids
 
     videos = [Path(vp) for vp in videos]

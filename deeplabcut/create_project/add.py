@@ -61,22 +61,16 @@ def add_new_videos(config, videos, copy_videos=False, coords=None):
         p.mkdir(parents=True, exist_ok=True)
 
     destinations = [video_path.joinpath(vp.name) for vp in videos]
-    if copy_videos:
-        for src, dst in zip(videos, destinations):
-            if dst.exists():
-                pass
-            else:
+    for src, dst in zip(videos, destinations):
+        if copy_videos:
+            if not dst.exists():
                 print("Copying the videos")
                 shutil.copy(os.fspath(src), os.fspath(dst))
-    else:
-        for src, dst in zip(videos, destinations):
-            if dst.exists():
-                pass
-            else:
-                print("Creating the symbolic link of the video")
-                src = str(src)
-                dst = str(dst)
-                os.symlink(src, dst)
+        elif not dst.exists():
+            print("Creating the symbolic link of the video")
+            src = str(src)
+            dst = str(dst)
+            os.symlink(src, dst)
 
     if copy_videos:
         videos = destinations  # in this case the *new* location should be added to the config file
@@ -90,10 +84,7 @@ def add_new_videos(config, videos, copy_videos=False, coords=None):
             video_path = os.readlink(video)
 
         vid = VideoReader(video_path)
-        if coords is not None:
-            c = coords[idx]
-        else:
-            c = vid.get_bbox()
+        c = coords[idx] if coords is not None else vid.get_bbox()
         params = {video_path: {"crop": ", ".join(map(str, c))}}
         if "video_sets_original" not in cfg:
             cfg["video_sets"].update(params)

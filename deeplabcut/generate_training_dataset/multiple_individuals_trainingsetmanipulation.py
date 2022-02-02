@@ -60,7 +60,7 @@ def format_multianimal_training_data(
     for i in tqdm(train_inds):
         filename = filenames[i]
         img_shape = read_image_shape_fast(os.path.join(project_path, *filename))
-        joints = dict()
+        joints = {}
         has_data = False
         for n, xy in enumerate(array[i]):
             # Drop missing body parts
@@ -194,7 +194,7 @@ def create_multianimaltraining_dataset(
 
     if net_type is None:  # loading & linking pretrained models
         net_type = cfg.get("default_net_type", "dlcrnet_ms5")
-    elif not any(net in net_type for net in ("resnet", "eff", "dlc", "mob")):
+    elif all(net not in net_type for net in ("resnet", "eff", "dlc", "mob")):
         raise ValueError(f"Unsupported network {net_type}.")
 
     multi_stage = False
@@ -239,13 +239,13 @@ def create_multianimaltraining_dataset(
     )
 
     if Shuffles is None:
-        Shuffles = range(1, num_shuffles + 1, 1)
+        Shuffles = range(1, num_shuffles + 1)
     else:
         Shuffles = [i for i in Shuffles if isinstance(i, int)]
 
+    splits = []
     # print(trainIndices,testIndices, Shuffles, augmenter_type,net_type)
     if trainIndices is None and testIndices is None:
-        splits = []
         for shuffle in Shuffles:  # Creating shuffles starting from 1
             for train_frac in cfg["TrainingFraction"]:
                 train_inds, test_inds = SplitTrials(range(len(Data)), train_frac)
@@ -255,7 +255,6 @@ def create_multianimaltraining_dataset(
             raise ValueError(
                 "Number of Shuffles and train and test indexes should be equal."
             )
-        splits = []
         for shuffle, (train_inds, test_inds) in enumerate(
             zip(trainIndices, testIndices)
         ):
@@ -432,11 +431,13 @@ def create_multianimaltraining_dataset(
                 dlcparent_path, "inference_cfg.yaml"
             )
             items2change = {
-                "minimalnumberofconnections": int(len(cfg["multianimalbodyparts"]) / 2),
+                "minimalnumberofconnections": len(cfg["multianimalbodyparts"])
+                // 2,
                 "topktoretain": len(cfg["individuals"])
                 + 1 * (len(cfg["uniquebodyparts"]) > 0),
                 "withid": cfg.get("identity", False),
             }
+
             MakeInference_yaml(
                 items2change, path_inference_config, defaultinference_configfile
             )
@@ -444,8 +445,6 @@ def create_multianimaltraining_dataset(
             print(
                 "The training dataset is successfully created. Use the function 'train_network' to start training. Happy training!"
             )
-        else:
-            pass
 
 
 def convert_cropped_to_standard_dataset(

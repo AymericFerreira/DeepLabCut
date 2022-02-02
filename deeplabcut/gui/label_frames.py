@@ -171,16 +171,14 @@ class Label_frames(wx.Panel):
     def help_function(self, event):
 
         filepath = "help.txt"
-        f = open(filepath, "w")
-        sys.stdout = f
-        fnc_name = "deeplabcut.label_frames"
-        pydoc.help(fnc_name)
-        f.close()
+        with open(filepath, "w") as f:
+            sys.stdout = f
+            fnc_name = "deeplabcut.label_frames"
+            pydoc.help(fnc_name)
         sys.stdout = sys.__stdout__
-        help_file = open("help.txt", "r+")
-        help_text = help_file.read()
-        wx.MessageBox(help_text, "Help", wx.OK | wx.ICON_INFORMATION)
-        help_file.close()
+        with open("help.txt", "r+") as help_file:
+            help_text = help_file.read()
+            wx.MessageBox(help_text, "Help", wx.OK | wx.ICON_INFORMATION)
         os.remove("help.txt")
 
     def check_labelF(self, event):
