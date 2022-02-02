@@ -53,95 +53,93 @@ class ImagePanel(BasePanel):
 
         # load labeledPoints and fundamental Matrix
 
-        if self.config3d is not None:
-            cfg_3d = auxiliaryfunctions.read_config(self.config3d)
-            cams = cfg_3d["camera_names"]
-            path_camera_matrix = auxiliaryfunctions_3d.Foldernames3Dproject(cfg_3d)[2]
-            path_stereo_file = os.path.join(path_camera_matrix, "stereo_params.pickle")
-            stereo_file = auxiliaryfunctions.read_pickle(path_stereo_file)
-
-            for cam in cams:
-                if cam in img:
-                    labelCam = cam
-                    if self.sourceCam is None:
-                        sourceCam = [
-                            otherCam for otherCam in cams if cam not in otherCam
-                        ][0]
-                    else:
-                        sourceCam = self.sourceCam
-
-            sourceCamIdx = np.where(np.array(cams) == sourceCam)[0][0]
-            labelCamIdx = np.where(np.array(cams) == labelCam)[0][0]
-            if sourceCamIdx < labelCamIdx:
-                camera_pair = cams[sourceCamIdx] + "-" + cams[labelCamIdx]
-                sourceCam_numInPair = 1
-            else:
-                camera_pair = cams[labelCamIdx] + "-" + cams[sourceCamIdx]
-                sourceCam_numInPair = 2
-
-            fundMat = stereo_file[camera_pair]["F"]
-            sourceCam_path = os.path.split(img.replace(labelCam, sourceCam))[0]
-
-            cfg = auxiliaryfunctions.read_config(self.config)
-            scorer = cfg["scorer"]
-
-            try:
-                dataFrame = pd.read_hdf(
-                    os.path.join(sourceCam_path, "CollectedData_" + scorer + ".h5")
-                )
-                dataFrame.sort_index(inplace=True)
-            except IOError:
-                print(
-                    "source camera images have not yet been labeled, or you have opened this folder in the wrong mode!"
-                )
-                return None, None, None
-
-            # Find offset terms for drawing epipolar Lines
-            # Get crop params for camera being labeled
-            foundEvent = 0
-            eventSearch = re.compile(os.path.split(os.path.split(img)[0])[1])
-            cropPattern = re.compile("[0-9]{1,4}")
-            with open(self.config, "rt") as config:
-                for line in config:
-                    if foundEvent == 1:
-                        crop_labelCam = np.int32(re.findall(cropPattern, line))
-                        break
-                    if eventSearch.search(line) != None:
-                        foundEvent = 1
-            # Get crop params for other camera
-            foundEvent = 0
-            eventSearch = re.compile(os.path.split(sourceCam_path)[1])
-            cropPattern = re.compile("[0-9]{1,4}")
-            with open(self.config, "rt") as config:
-                for line in config:
-                    if foundEvent == 1:
-                        crop_sourceCam = np.int32(re.findall(cropPattern, line))
-                        break
-                    if eventSearch.search(line) != None:
-                        foundEvent = 1
-
-            labelCam_offsets = [crop_labelCam[0], crop_labelCam[2]]
-            sourceCam_offsets = [crop_sourceCam[0], crop_sourceCam[2]]
-
-            sourceCam_pts = np.asarray(dataFrame, dtype=np.int32)
-            sourceCam_pts = sourceCam_pts.reshape(
-                (sourceCam_pts.shape[0], int(sourceCam_pts.shape[1] / 2), 2)
-            )
-            sourceCam_pts = np.moveaxis(sourceCam_pts, [0, 1, 2], [1, 0, 2])
-            sourceCam_pts[..., 0] = sourceCam_pts[..., 0] + sourceCam_offsets[0]
-            sourceCam_pts[..., 1] = sourceCam_pts[..., 1] + sourceCam_offsets[1]
-
-            sourcePts = sourceCam_pts[:, imNum, :]
-
-            epLines_source2label = cv2.computeCorrespondEpilines(
-                sourcePts, int(sourceCam_numInPair), fundMat
-            )
-            epLines_source2label.reshape(-1, 3)
-
-            return epLines_source2label, sourcePts, labelCam_offsets
-
-        else:
+        if self.config3d is None:
             return None, None, None
+        cfg_3d = auxiliaryfunctions.read_config(self.config3d)
+        cams = cfg_3d["camera_names"]
+        path_camera_matrix = auxiliaryfunctions_3d.Foldernames3Dproject(cfg_3d)[2]
+        path_stereo_file = os.path.join(path_camera_matrix, "stereo_params.pickle")
+        stereo_file = auxiliaryfunctions.read_pickle(path_stereo_file)
+
+        for cam in cams:
+            if cam in img:
+                labelCam = cam
+                if self.sourceCam is None:
+                    sourceCam = [
+                        otherCam for otherCam in cams if cam not in otherCam
+                    ][0]
+                else:
+                    sourceCam = self.sourceCam
+
+        sourceCamIdx = np.where(np.array(cams) == sourceCam)[0][0]
+        labelCamIdx = np.where(np.array(cams) == labelCam)[0][0]
+        if sourceCamIdx < labelCamIdx:
+            camera_pair = cams[sourceCamIdx] + "-" + cams[labelCamIdx]
+            sourceCam_numInPair = 1
+        else:
+            camera_pair = cams[labelCamIdx] + "-" + cams[sourceCamIdx]
+            sourceCam_numInPair = 2
+
+        fundMat = stereo_file[camera_pair]["F"]
+        sourceCam_path = os.path.split(img.replace(labelCam, sourceCam))[0]
+
+        cfg = auxiliaryfunctions.read_config(self.config)
+        scorer = cfg["scorer"]
+
+        try:
+            dataFrame = pd.read_hdf(
+                os.path.join(sourceCam_path, "CollectedData_" + scorer + ".h5")
+            )
+            dataFrame.sort_index(inplace=True)
+        except IOError:
+            print(
+                "source camera images have not yet been labeled, or you have opened this folder in the wrong mode!"
+            )
+            return None, None, None
+
+        # Find offset terms for drawing epipolar Lines
+        # Get crop params for camera being labeled
+        foundEvent = 0
+        eventSearch = re.compile(os.path.split(os.path.split(img)[0])[1])
+        cropPattern = re.compile("[0-9]{1,4}")
+        with open(self.config, "rt") as config:
+            for line in config:
+                if foundEvent == 1:
+                    crop_labelCam = np.int32(re.findall(cropPattern, line))
+                    break
+                if eventSearch.search(line) != None:
+                    foundEvent = 1
+        # Get crop params for other camera
+        foundEvent = 0
+        eventSearch = re.compile(os.path.split(sourceCam_path)[1])
+        cropPattern = re.compile("[0-9]{1,4}")
+        with open(self.config, "rt") as config:
+            for line in config:
+                if foundEvent == 1:
+                    crop_sourceCam = np.int32(re.findall(cropPattern, line))
+                    break
+                if eventSearch.search(line) != None:
+                    foundEvent = 1
+
+        labelCam_offsets = [crop_labelCam[0], crop_labelCam[2]]
+        sourceCam_offsets = [crop_sourceCam[0], crop_sourceCam[2]]
+
+        sourceCam_pts = np.asarray(dataFrame, dtype=np.int32)
+        sourceCam_pts = sourceCam_pts.reshape(
+            (sourceCam_pts.shape[0], int(sourceCam_pts.shape[1] / 2), 2)
+        )
+        sourceCam_pts = np.moveaxis(sourceCam_pts, [0, 1, 2], [1, 0, 2])
+        sourceCam_pts[..., 0] = sourceCam_pts[..., 0] + sourceCam_offsets[0]
+        sourceCam_pts[..., 1] = sourceCam_pts[..., 1] + sourceCam_offsets[1]
+
+        sourcePts = sourceCam_pts[:, imNum, :]
+
+        epLines_source2label = cv2.computeCorrespondEpilines(
+            sourcePts, int(sourceCam_numInPair), fundMat
+        )
+        epLines_source2label.reshape(-1, 3)
+
+        return epLines_source2label, sourcePts, labelCam_offsets
 
     def drawEpLines(self, drawImage, lines, sourcePts, offsets, colorIndex, cmap):
         height, width, depth = drawImage.shape
@@ -159,7 +157,7 @@ class ImagePanel(BasePanel):
                 )
                 cIdx = cIdx / 255
                 color = cmap(cIdx, bytes=True)[:-1]
-                color = tuple([int(x) for x in color])
+                color = tuple(int(x) for x in color)
                 drawImage = cv2.line(drawImage, (x0, y0), (x1, y1), color, 1)
         return drawImage
 
@@ -171,7 +169,7 @@ class ImagePanel(BasePanel):
         # convert the image to RGB as you are showing the image with matplotlib
         im = cv2.imread(img)[..., ::-1]
         colorIndex = []
-        for indiv in range(len(individuals)):
+        for _ in range(len(individuals)):
             colorIndex.extend(np.linspace(np.max(im), np.min(im), len(bodyparts)))
         colorIndex = np.array(colorIndex)
         # draw epipolar lines
@@ -235,7 +233,7 @@ class ScrollPanel(SP.ScrolledPanel):
         Adds radio buttons for each bodypart on the right panel
         """
         self.choiceBox = wx.BoxSizer(wx.VERTICAL)
-        choices = [l for l in bodyparts]
+        choices = list(bodyparts)
         self.fieldradiobox = wx.RadioBox(
             self,
             label="Select a bodypart to label",
@@ -253,7 +251,7 @@ class ScrollPanel(SP.ScrolledPanel):
             style=wx.SL_HORIZONTAL | wx.SL_AUTOTICKS | wx.SL_LABELS,
         )
         self.change_marker.Enable(False)
-        names = [k for k in individual_names]
+        names = list(individual_names)
         self.individualradiobox = wx.RadioBox(
             self,
             label="Select an individual",
@@ -464,12 +462,12 @@ class MainFrame(BaseFrame):
                 self.norm, self.colorIndex = self.image_panel.getColorIndices(
                     self.img, self.uniquebodyparts
                 )
-                self.buttonCounter = MainFrame.plot(self, self.img)
             else:
                 self.norm, self.colorIndex = self.image_panel.getColorIndices(
                     self.img, self.multibodyparts
                 )
-                self.buttonCounter = MainFrame.plot(self, self.img)
+
+            self.buttonCounter = MainFrame.plot(self, self.img)
 
     def activateSlider(self, event):
         """

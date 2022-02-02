@@ -179,13 +179,13 @@ def dropannotationfileentriesduetodeletedimages(config):
         DC = pd.read_hdf(fn)
         dropped = False
         for imagename in DC.index:
-            if os.path.isfile(os.path.join(cfg["project_path"], *imagename)):
-                pass
-            else:
+            if not os.path.isfile(
+                os.path.join(cfg["project_path"], *imagename)
+            ):
                 print("Dropping...", imagename)
                 DC = DC.drop(imagename)
                 dropped = True
-        if dropped == True:
+        if dropped:
             DC.to_hdf(fn, key="df_with_missing", mode="w")
             DC.to_csv(
                 os.path.join(str(folder), "CollectedData_" + cfg["scorer"] + ".csv")
@@ -207,17 +207,15 @@ def dropimagesduetolackofannotation(config):
     video_names = [Path(i).stem for i in videos]
     folders = [Path(config).parent / "labeled-data" / Path(i) for i in video_names]
 
+    dropped = False
     for folder in folders:
         fn = os.path.join(str(folder), "CollectedData_" + cfg["scorer"] + ".h5")
         DC = pd.read_hdf(fn)
-        dropped = False
         annotatedimages = [fn.split(os.sep)[-1] for fn in DC.index]
         imagelist = [fns for fns in os.listdir(str(folder)) if ".png" in fns]
         print("Annotated images: ", len(annotatedimages), " In folder:", len(imagelist))
         for imagename in imagelist:
-            if imagename in annotatedimages:
-                pass
-            else:
+            if imagename not in annotatedimages:
                 fullpath = os.path.join(
                     cfg["project_path"], "labeled-data", folder, imagename
                 )
@@ -362,10 +360,7 @@ def MakeTest_pose_yaml(
     sigma=None,
     locref_smooth=None,
 ):
-    dict_test = {}
-    for key in keys2save:
-        dict_test[key] = dictionary[key]
-
+    dict_test = {key: dictionary[key] for key in keys2save}
     # adding important values for multianiaml project:
     if nmsradius is not None:
         dict_test["nmsradius"] = nmsradius
@@ -433,9 +428,9 @@ def merge_annotateddatasets(cfg, trainingsetfolder_full):
             "Annotation data was not found by splitting video paths (from config['video_sets']). An alternative route is taken..."
         )
         AnnotationData = conversioncode.merge_windowsannotationdataONlinuxsystem(cfg)
-        if not len(AnnotationData):
-            print("No data was found!")
-            return
+    if not len(AnnotationData):
+        print("No data was found!")
+        return
 
     AnnotationData = pd.concat(AnnotationData).sort_index()
     # When concatenating DataFrames with misaligned column labels,
@@ -751,15 +746,12 @@ def create_training_dataset(
         # loading & linking pretrained models
         if net_type is None:  # loading & linking pretrained models
             net_type = cfg.get("default_net_type", "resnet_50")
-        else:
-            if (
-                "resnet" in net_type
-                or "mobilenet" in net_type
-                or "efficientnet" in net_type
-            ):
-                pass
-            else:
-                raise ValueError("Invalid network type:", net_type)
+        elif (
+            "resnet" not in net_type
+            and "mobilenet" not in net_type
+            and "efficientnet" not in net_type
+        ):
+            raise ValueError("Invalid network type:", net_type)
 
         if augmenter_type is None:
             augmenter_type = cfg.get("default_augmenter", "imgaug")
@@ -838,12 +830,7 @@ def create_training_dataset(
                         askuser = input(
                             "The model folder is already present. If you continue, it will overwrite the existing model (split). Do you want to continue?(yes/no): "
                         )
-                        if (
-                            askuser == "no"
-                            or askuser == "No"
-                            or askuser == "N"
-                            or askuser == "No"
-                        ):
+                        if askuser in ["no", "No", "N"]:
                             raise Exception(
                                 "Use the Shuffles argument as a list to specify a different shuffle index. Check out the help for more details."
                             )
@@ -966,11 +953,9 @@ def get_largestshuffle_index(config):
         models.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
 
         # get the shuffle index and offset by 1.
-        max_shuffle_index = int(models[-1].split("shuffle")[-1]) + 1
+        return int(models[-1].split("shuffle")[-1]) + 1
     else:
-        max_shuffle_index = 0
-
-    return max_shuffle_index
+        return 0
 
 
 def create_training_model_comparison(
@@ -1047,9 +1032,6 @@ def create_training_model_comparison(
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
         logger.setLevel(logging.INFO)
-    else:
-        pass
-
     largestshuffleindex = get_largestshuffle_index(config)
 
     shuffle_list = []

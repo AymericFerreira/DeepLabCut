@@ -161,9 +161,8 @@ class DraggablePoint:
                 self.annot.get_bbox_patch().set_alpha(0.4)
                 self.annot.set_visible(True)
                 self.point.figure.canvas.draw_idle()
-            else:
-                if vis:
-                    self.annot.set_visible(False)
+            elif vis:
+                self.annot.set_visible(False)
 
     def disconnect(self):
         "disconnect all the stored connection ids"

@@ -307,7 +307,6 @@ class MainFrame(BaseFrame):
 
             self.load.Enable(False)
         else:
-            pass
             dlg.Destroy()
             self.Close(True)
         dlg.Destroy()

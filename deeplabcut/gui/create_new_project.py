@@ -219,16 +219,14 @@ class Create_new_project(wx.Panel):
     def help_function(self, event):
 
         filepath = "help.txt"
-        f = open(filepath, "w")
-        sys.stdout = f
-        fnc_name = "deeplabcut.create_new_project"
-        pydoc.help(fnc_name)
-        f.close()
+        with open(filepath, "w") as f:
+            sys.stdout = f
+            fnc_name = "deeplabcut.create_new_project"
+            pydoc.help(fnc_name)
         sys.stdout = sys.__stdout__
-        help_file = open("help.txt", "r+")
-        help_text = help_file.read()
-        wx.MessageBox(help_text, "Help", wx.OK | wx.ICON_INFORMATION)
-        help_file.close()
+        with open("help.txt", "r+") as help_file:
+            help_text = help_file.read()
+            wx.MessageBox(help_text, "Help", wx.OK | wx.ICON_INFORMATION)
         os.remove("help.txt")
 
     def chooseOption(self, event):
@@ -249,9 +247,6 @@ class Create_new_project(wx.Panel):
             self.sel_config.Show()
             self.cfg_text.Show()
             self.addvid.Enable(False)
-            # self.SetSizer(self.sizer)
-            # self.sizer.Add(self.sizer, pos=(3, 0), span=(1, 8),flag=wx.EXPAND|wx.BOTTOM, border=15)
-            self.sizer.Fit(self)
         else:
             self.proj_name.Enable(True)
             self.proj_name_txt_box.Enable(True)
@@ -270,7 +265,10 @@ class Create_new_project(wx.Panel):
             #                self.ok.Enable(True)
             self.addvid.Enable(False)
             self.SetSizer(self.sizer)
-            self.sizer.Fit(self)
+
+        # self.SetSizer(self.sizer)
+        # self.sizer.Add(self.sizer, pos=(3, 0), span=(1, 8),flag=wx.EXPAND|wx.BOTTOM, border=15)
+        self.sizer.Fit(self)
 
     def edit_config(self, event):
         """
@@ -283,9 +281,7 @@ class Create_new_project(wx.Panel):
             else:
                 self.file_open_bool = webbrowser.open(self.cfg)
 
-            if self.file_open_bool:
-                pass
-            else:
+            if not self.file_open_bool:
                 raise FileNotFoundError("File not found!")
 
     def select_videos(self, event):
@@ -306,10 +302,7 @@ class Create_new_project(wx.Panel):
         Activates the option to copy videos
         """
         self.change_copy = event.GetEventObject()
-        if self.change_copy.GetValue():
-            self.copy = True
-        else:
-            self.copy = False
+        self.copy = bool(self.change_copy.GetValue())
 
     def activate_change_wd(self, event):
         """
@@ -380,7 +373,7 @@ class Create_new_project(wx.Panel):
 
         # Remove the pages in case the user goes back to the create new project and creates/load a new project
         if self.parent.GetPageCount() > 3:
-            for i in range(2, self.parent.GetPageCount()):
+            for _ in range(2, self.parent.GetPageCount()):
                 self.parent.RemovePage(2)
                 self.parent.Layout()
 
